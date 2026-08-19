@@ -4,7 +4,7 @@
 **Khóa học:** AICB-K34 · Track 3: GraphRAG
 **Ngày thực hiện:** 19/08/2026
 
-**Phạm vi dữ liệu thực nghiệm:** 5.000 dòng đầu tiên của `HackerNoon/tech-company-news-data-dump` (khớp với golden dataset `graphrag_golden_50_first5000.csv` do giảng viên cung cấp) → sau exact-dedup còn **2.105 bài báo** → **1.500 chunks** đưa vào Flat RAG index, **400 chunks** đưa vào extraction pipeline. Graph kết quả: **348 nodes / 232 edges / 0 invalid_provenance_edges**.
+**Phạm vi dữ liệu thực nghiệm:** 5.000 dòng đầu tiên của `HackerNoon/tech-company-news-data-dump` (khớp với golden dataset `graphrag_golden_50_first5000.csv` do giảng viên cung cấp) → sau exact-dedup còn **2.105 bài báo** → **1.500 chunks** đưa vào Flat RAG index, **400 chunks** đưa vào extraction pipeline. Graph kết quả (lần chạy cuối cùng dùng để xuất outputs/): **362 nodes / 253 edges / 0 invalid_provenance_edges**.
 
 ---
 
@@ -49,7 +49,7 @@
 |------|--------------|---------------------|----------------------|
 | 1 | Information Services Group | Company | 5 |
 
-  Trong lượt chạy trên scope 348 nodes / 232 edges (5000 dòng, 400 chunks extraction), **top-1 node chỉ đạt degree = 5** — thấp hơn rất nhiều so với ngưỡng `SUPER_NODE_DEGREE = 100` được thiết kế trong pipeline. Điều này có nghĩa **cơ chế super-node mitigation chưa từng được kích hoạt thật sự** trong phạm vi dữ liệu hiện tại; test `assert len(edges) <= 50` chỉ chạy nhánh else (`limit = 1000`, không cắt).
+  Trong lượt chạy trên scope 362 nodes / 253 edges (5000 dòng, 400 chunks extraction), **top-1 node chỉ đạt degree = 5** — thấp hơn rất nhiều so với ngưỡng `SUPER_NODE_DEGREE = 100` được thiết kế trong pipeline. Điều này có nghĩa **cơ chế super-node mitigation chưa từng được kích hoạt thật sự** trong phạm vi dữ liệu hiện tại; test `assert len(edges) <= 50` chỉ chạy nhánh else (`limit = 1000`, không cắt).
 - **Nguyên nhân:** Với `EXTRACTION_MAX_CHUNKS = 400` (một phần rất nhỏ so với 2.105 bài báo đã dedup), số lượng edge quy tụ về một entity trung tâm (ví dụ Microsoft, Google, OpenAI) chưa đủ lớn để tạo bậc cao. Trong bản đầy đủ (~350MB, ~100.000 bài báo), các công ty lớn chắc chắn sẽ vượt ngưỡng 100 vì xuất hiện trong hàng nghìn bài viết.
 - **Ưu điểm & Rủi ro của Temporal Mitigation (phân tích dựa trên thiết kế, áp dụng khi scale lớn):**
   - *Ưu điểm:* Giữ context đồ thị tập trung vào diễn biến gần nhất — với câu hỏi kiểu "Microsoft đầu tư gì gần đây?", 50 cạnh mới nhất trả lời chính xác hơn 1000+ cạnh cũ trộn lẫn ngẫu nhiên, đồng thời giữ `MAX_GRAPH_CONTEXT_CHARS` trong tầm kiểm soát, tránh tràn token khi gọi LLM.
@@ -63,30 +63,32 @@
 
 | Nhóm câu hỏi | Tiêu chí đánh giá | Flat RAG | GraphRAG | Δ (Graph − Flat) | Nhận xét |
 |---|---|---|---|---|---|
-| cross-doc | Comprehensiveness | 2.545 | 2.182 | −0.363 | Hai phương pháp gần nhau |
-| cross-doc | Faithfulness | 3.000 | 2.727 | −0.273 | Hai phương pháp gần nhau |
-| cross-doc | Multi-hop reasoning | 2.545 | 2.182 | −0.363 | Hai phương pháp gần nhau |
-| cross-doc | Latency (s) | 1.930 | 1.765 | −0.165 | GraphRAG không đắt hơn |
-| cross-doc | Token usage | 636.2 | 594.9 | −41.3 | GraphRAG không đắt hơn |
-| factoid | Comprehensiveness | 3.000 | 2.500 | −0.500 | Flat RAG tốt hơn |
+| cross-doc | Comprehensiveness | 2.545 | 2.364 | −0.181 | Hai phương pháp gần nhau |
+| cross-doc | Faithfulness | 2.909 | 2.727 | −0.182 | Hai phương pháp gần nhau |
+| cross-doc | Multi-hop reasoning | 2.545 | 2.364 | −0.181 | Hai phương pháp gần nhau |
+| cross-doc | Latency (s) | 2.201 | 1.943 | −0.258 | GraphRAG không đắt hơn |
+| cross-doc | Token usage | 641.3 | 596.0 | −45.3 | GraphRAG không đắt hơn |
+| factoid | Comprehensiveness | 2.500 | 3.000 | +0.500 | GraphRAG tốt hơn |
 | factoid | Faithfulness | 3.000 | 3.000 | 0.000 | Ngang nhau |
-| factoid | Multi-hop reasoning | 3.000 | 2.500 | −0.500 | Flat RAG tốt hơn |
-| factoid | Latency (s) | 1.739 | 1.202 | −0.537 | GraphRAG không đắt hơn |
-| factoid | Token usage | 599.0 | 488.5 | −110.5 | GraphRAG không đắt hơn |
-| multi-hop | Comprehensiveness | 2.250 | 1.917 | −0.333 | Hai phương pháp gần nhau |
-| multi-hop | Faithfulness | 2.333 | 2.167 | −0.166 | Hai phương pháp gần nhau |
-| multi-hop | Multi-hop reasoning | 2.250 | 1.917 | −0.333 | Hai phương pháp gần nhau |
-| multi-hop | Latency (s) | 2.826 | 2.389 | −0.437 | GraphRAG không đắt hơn |
-| multi-hop | Token usage | 670.1 | 655.1 | −15.0 | GraphRAG không đắt hơn |
+| factoid | Multi-hop reasoning | 2.500 | 3.000 | +0.500 | GraphRAG tốt hơn |
+| factoid | Latency (s) | 1.758 | 1.674 | −0.084 | GraphRAG không đắt hơn |
+| factoid | Token usage | 602.5 | 502.5 | −100.0 | GraphRAG không đắt hơn |
+| multi-hop | Comprehensiveness | 2.333 | 1.917 | −0.416 | Flat RAG tốt hơn |
+| multi-hop | Faithfulness | 2.417 | 2.167 | −0.250 | Hai phương pháp gần nhau |
+| multi-hop | Multi-hop reasoning | 2.333 | 1.917 | −0.416 | Flat RAG tốt hơn |
+| multi-hop | Latency (s) | 2.749 | 2.827 | +0.078 | Flat RAG rẻ/nhanh hơn |
+| multi-hop | Token usage | 676.3 | 742.2 | +65.9 | Flat RAG rẻ/nhanh hơn |
 
-**Nhận xét tổng quát bất ngờ:** Trái với kỳ vọng lý thuyết, **GraphRAG không vượt trội Flat RAG ở bất kỳ nhóm câu hỏi nào trong thực nghiệm này**, kể cả nhóm `multi-hop` — nơi GraphRAG lẽ ra phải có lợi thế lớn nhất. Nguyên nhân chính (phân tích ở mục 3): graph quá thưa (348 nodes / 232 edges, degree tối đa chỉ 5) do `EXTRACTION_MAX_CHUNKS=400` quá nhỏ so với 2.105 bài báo — seed-entity matching thường không tìm đủ node liên quan trong graph, khiến `retrieve_graph_context()` trả về context nghèo nàn hơn Flat RAG (vốn luôn truy xuất được top-k chunk gần nghĩa nhất từ toàn bộ 1.500 chunks). Đây là bài học quan trọng: **GraphRAG chỉ phát huy giá trị khi đồ thị đủ dày** (coverage đủ lớn so với corpus).
+**Nhận xét tổng quát bất ngờ:** Trái với kỳ vọng lý thuyết, **GraphRAG chỉ vượt trội Flat RAG ở nhóm `factoid`** (Comprehensiveness/Multi-hop reasoning +0.5), trong khi ở nhóm `multi-hop` — nơi GraphRAG lẽ ra phải có lợi thế lớn nhất — **Flat RAG lại thắng rõ rệt** (−0.416 comprehensiveness, và lần đầu tiên GraphRAG cũng đắt hơn cả về latency lẫn token). Nguyên nhân chính (phân tích ở mục 3): graph quá thưa (348–362 nodes / ~230 edges, degree tối đa chỉ 5) do `EXTRACTION_MAX_CHUNKS=400` quá nhỏ so với 2.105 bài báo — seed-entity matching thường không tìm đủ node liên quan trong graph, khiến `retrieve_graph_context()` trả về context nghèo nàn hơn Flat RAG (vốn luôn truy xuất được top-k chunk gần nghĩa nhất từ toàn bộ 1.500 chunks) đúng ở những câu hỏi multi-hop phức tạp cần nhiều bước suy luận. Đây là bài học quan trọng: **GraphRAG chỉ phát huy giá trị khi đồ thị đủ dày** (coverage đủ lớn so với corpus) — với factoid đơn giản, một vài cạnh chính xác vẫn đủ để GraphRAG thắng, nhưng multi-hop cần độ phủ sâu hơn nhiều mà quy mô 400 chunks chưa đáp ứng được.
+
+*(Lưu ý: kết quả LLM-as-a-Judge không hoàn toàn deterministic giữa các lần chạy do `temperature=0.0` không đảm bảo 100% tái lập với model API — số liệu trên là từ lần chạy cuối cùng dùng để xuất `outputs/graphrag_eval_results.csv` nộp bài; xu hướng tổng thể — GraphRAG không vượt trội rõ rệt do graph thưa — nhất quán qua các lần chạy.)*
 
 #### Phân tích 2 Ca lỗi Điển hình (trích trực tiếp từ `outputs/graphrag_eval_results.csv`):
 
 1. **Ca lỗi GraphRAG thất bại nặng (Flat RAG thành công) — `G5000-26` (multi-hop):**
    - *Câu hỏi:* "What external technology provider is named inside Amazon's July AI-service expansion, and what other new AI capability is mentioned alongside it?"
    - *Điểm số:* Flat RAG = 5/5/5 (Comp/Faith/MultiHop) vs GraphRAG = 1/1/1.
-   - *Tại sao GraphRAG thất bại?* Graph trả lời sai hoàn toàn: gán nhầm nhà cung cấp là **"Advanced Micro Devices Inc."** thay vì đáp án đúng **"Cohere"**. Judge rationale: *"The candidate incorrectly identifies the external technology provider as Advanced Micro Devices Inc., whereas the reference states it is Cohere."* Nguyên nhân gốc: seed-entity extraction từ câu hỏi trích ra "Amazon" làm seed chính, nhưng BFS traversal (`max_hops=2`) từ node Amazon trong graph thưa đã đi lạc sang cạnh `Amazon–AMD` (do cả hai đều xuất hiện trong cùng vùng dữ liệu về chip AI) thay vì cạnh `Amazon–Cohere` — vì graph chỉ có 232 edges nên không đủ granularity để phân biệt đúng ngữ cảnh "July AI-service expansion".
+   - *Tại sao GraphRAG thất bại?* Graph trả lời sai hoàn toàn: gán nhầm nhà cung cấp là **"Advanced Micro Devices Inc."** thay vì đáp án đúng **"Cohere"**. Judge rationale: *"The candidate incorrectly identifies the external technology provider as Advanced Micro Devices Inc., whereas the reference states it is Cohere."* Nguyên nhân gốc: seed-entity extraction từ câu hỏi trích ra "Amazon" làm seed chính, nhưng BFS traversal (`max_hops=2`) từ node Amazon trong graph thưa đã đi lạc sang cạnh `Amazon–AMD` (do cả hai đều xuất hiện trong cùng vùng dữ liệu về chip AI) thay vì cạnh `Amazon–Cohere` — vì graph chỉ có ~250 edges nên không đủ granularity để phân biệt đúng ngữ cảnh "July AI-service expansion".
    - *Flat RAG thành công như thế nào?* Vector search trực tiếp trên 1.500 chunks tìm đúng chunk chứa cả "Cohere" và "conversational customer-service agents" nhờ embedding similarity ngữ nghĩa tốt, không phụ thuộc vào độ đầy đủ của graph.
 
 2. **Ca lỗi GraphRAG thành công (Flat RAG thất bại) — `G5000-35` (cross-doc):**
@@ -113,6 +115,19 @@
 
 ---
 
+### 6. Bonus: Global Search via Community Reports (+5)
+> Áp dụng NetworkX phân cụm cộng đồng, nạp `community_id`, sinh tóm tắt cộng đồng.
+
+*Trả lời:*
+- **Thực thi:** Gọi `build_communities()` (cell "Bonus — NetworkX community fallback") trên đồ thị Neo4j thật (362 nodes, 253 directed edges sau khi convert sang undirected). Dùng `nx.algorithms.community.greedy_modularity_communities()` để phân cụm, sau đó ghi `community_id` trở lại từng node qua `UNWIND` batch update.
+- **Kết quả thật:** Tìm được **136 communities**. Phân bố kích thước: 1 cộng đồng lớn nhất có 7 thành viên, giảm dần xuống phần lớn (108/136) chỉ có 2 thành viên — phản ánh đúng bản chất đồ thị thưa (362 nodes/253 edges, xây từ chỉ 400 chunks extraction).
+- **Ví dụ "Community Report" tự sinh từ 2 cộng đồng lớn nhất:**
+  - **Community 0** (7 members): `institutions`, `57% stake institutions` (Company & Person — dấu hiệu lỗi extraction nhầm loại thực thể), `Information Services Group Inc.`, `Barry Holt`, `Information Services Group`, `GovernX` → chủ đề chung: **cấu trúc sở hữu và sản phẩm của Information Services Group** (công ty này cũng là top-1 super-node ở mục 3).
+  - **Community 1** (6 members): `Claroty`, `ServiceNow`, `CLogic`, `Service Graph Connector`, `Vulnerability Response`, `generative AI` → chủ đề chung: **hệ sinh thái bảo mật OT/security tích hợp với ServiceNow**.
+- **Đánh giá:** Cơ chế hoạt động đúng kỹ thuật (ghi `community_id` thành công, verify qua Cypher aggregation query khớp 362/362 node), nhưng giá trị thực tế của "Global Search" bị giới hạn bởi cùng nguyên nhân đã nêu ở mục 3 — đồ thị quá thưa nên phần lớn "cộng đồng" chỉ là các cặp/nhóm nhỏ 2-3 node, chưa đủ lớn để sinh ra "community report" tổng hợp có ý nghĩa như thiết kế gốc của GraphRAG Global Search (Microsoft's paper). Ở quy mô đầy đủ (~100.000 bài báo), kỹ thuật này sẽ phát huy giá trị rõ rệt hơn nhiều vì các công ty lớn sẽ tạo thành cộng đồng hàng chục-hàng trăm node với chủ đề rõ ràng (ví dụ toàn bộ hệ sinh thái AI của một Big Tech).
+
+---
+
 ## 📌 PHẦN 2: SUY NGẪM & KẾ HOẠCH ĐỒ ÁN (Reflection & Action Plan)
 
 ### 1. Mapping Bài giảng vào Code
@@ -120,7 +135,7 @@
 |--------------------------|------------------|------------------------|-----------------------------|
 | **Conservative Coreference** | Module 1 | `resolve_coref_batch()` | Chạy ổn định trên 400 chunks (424–450s), nhưng do phần lớn chunk chỉ có 1 câu (dataset là description ngắn, không phải full-text), giá trị thực tế của bước này bị giới hạn — ít cơ hội để có đại từ cần phân giải. |
 | **Schema & Allowlist Guard** | Module 2 | `ALLOWED_NODE_TYPES`, `ALLOWED_RELATIONS` | Hoạt động đúng thiết kế: `extraction_errors_df` rỗng (0 lỗi), toàn bộ 176 triples đều nằm trong allowlist — LLM tuân thủ tốt JSON schema khi được ràng buộc rõ trong system prompt. |
-| **Bulk Cypher Ingestion** | Module 2 | `bulk_insert_nodes()`, `bulk_insert_edges()` | Chạy thành công với `UNWIND`, insert 348 nodes + 232 edges chỉ trong 1.7–3.8 giây — xác nhận đúng lợi ích của bulk insert so với insert từng dòng. |
+| **Bulk Cypher Ingestion** | Module 2 | `bulk_insert_nodes()`, `bulk_insert_edges()` | Chạy thành công với `UNWIND`, insert 362 nodes + 253 edges chỉ trong 1.7–3.8 giây — xác nhận đúng lợi ích của bulk insert so với insert từng dòng. |
 | **Entity Resolution & Union-Find** | Module 3 | `build_resolution_map()`, `UF` | Gộp đúng 5 cặp biến thể tên công ty (suffix Inc., viết tắt AWS), nhưng quy mô dữ liệu quá nhỏ để kiểm chứng đầy đủ khả năng chặn false-merge của lexical guard. |
 | **Super-node Degree Cap** | Module 4 | `retrieve_graph_context()` | Chưa được kích hoạt trong thực nghiệm (degree tối đa chỉ 5 << ngưỡng 100) — cần chạy ở quy mô lớn hơn để kiểm chứng cơ chế cắt tỉa cạnh hoạt động đúng. |
 | **LLM-as-a-Judge Evaluation** | Module 5 | `judge_answer()` | Chạy ổn định trên OpenAI `gpt-4o-mini`, sinh rationale rõ ràng và nhất quán với điểm số — hữu ích cho việc audit thủ công các case lỗi (như G5000-26, G5000-35 phân tích ở trên). |
@@ -149,5 +164,5 @@
 |----------|-------------------|---------|
 | Mức độ hiểu bài giảng GraphRAG | 4 | Hiểu rõ kiến trúc, nhưng cần dữ liệu lớn hơn để kiểm chứng đầy đủ giá trị của super-node mitigation trong thực tế |
 | Khả năng kiểm soát AI Coding Agent | 4 | Phát hiện và sửa đúng 2 lỗi hạ tầng nghiêm trọng (SSL CA store, rate limit model reasoning) thông qua kiểm chứng độc lập, không chấp nhận giả thuyết đầu tiên chưa được xác minh |
-| Chất lượng đồ thị tri thức xây dựng | 3 | Graph hoạt động đúng kỹ thuật (0 invalid provenance, entity resolution chính xác) nhưng quá thưa (348 nodes/232 edges) để phát huy lợi thế GraphRAG so với Flat RAG trong benchmark |
+| Chất lượng đồ thị tri thức xây dựng | 3 | Graph hoạt động đúng kỹ thuật (0 invalid provenance, entity resolution chính xác) nhưng quá thưa (362 nodes/253 edges) để phát huy lợi thế GraphRAG so với Flat RAG trong benchmark |
 | Khả năng phân tích và debug hệ thống | 5 | Truy vết thành công 2 sự cố hạ tầng phức tạp (Neo4j SSL, Groq rate limit) bằng phương pháp loại trừ có hệ thống (openssl, test độc lập từng thành phần) |

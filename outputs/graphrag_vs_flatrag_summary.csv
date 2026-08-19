@@ -1,16 +1,16 @@
 Loại câu hỏi,Metric,Flat RAG,GraphRAG,Nhận xét phân tích
-cross-doc,Comprehensiveness,2.545,2.182,Hai phương pháp gần nhau.
-cross-doc,Faithfulness,3.0,2.727,Hai phương pháp gần nhau.
-cross-doc,Multi-hop reasoning,2.545,2.182,Hai phương pháp gần nhau.
-cross-doc,Latency (s),1.93,1.765,GraphRAG không đắt hơn trong sample này.
-cross-doc,Token usage,636.182,594.909,GraphRAG không đắt hơn trong sample này.
-factoid,Comprehensiveness,3.0,2.5,Flat RAG tốt hơn; graph extraction/retrieval có thể gây mất thông tin hoặc nhiễu.
+cross-doc,Comprehensiveness,2.545,2.364,Hai phương pháp gần nhau.
+cross-doc,Faithfulness,2.909,2.727,Hai phương pháp gần nhau.
+cross-doc,Multi-hop reasoning,2.545,2.364,Hai phương pháp gần nhau.
+cross-doc,Latency (s),2.201,1.943,GraphRAG không đắt hơn trong sample này.
+cross-doc,Token usage,641.273,596.0,GraphRAG không đắt hơn trong sample này.
+factoid,Comprehensiveness,2.5,3.0,Hai phương pháp gần nhau.
 factoid,Faithfulness,3.0,3.0,Hai phương pháp gần nhau.
-factoid,Multi-hop reasoning,3.0,2.5,Flat RAG tốt hơn; graph extraction/retrieval có thể gây mất thông tin hoặc nhiễu.
-factoid,Latency (s),1.739,1.202,GraphRAG không đắt hơn trong sample này.
-factoid,Token usage,599.0,488.5,GraphRAG không đắt hơn trong sample này.
-multi-hop,Comprehensiveness,2.25,1.917,Hai phương pháp gần nhau.
-multi-hop,Faithfulness,2.333,2.167,Hai phương pháp gần nhau.
-multi-hop,Multi-hop reasoning,2.25,1.917,Hai phương pháp gần nhau.
-multi-hop,Latency (s),2.826,2.389,GraphRAG không đắt hơn trong sample này.
-multi-hop,Token usage,670.083,655.083,GraphRAG không đắt hơn trong sample này.
+factoid,Multi-hop reasoning,2.5,3.0,Hai phương pháp gần nhau.
+factoid,Latency (s),1.758,1.674,GraphRAG không đắt hơn trong sample này.
+factoid,Token usage,602.5,502.5,GraphRAG không đắt hơn trong sample này.
+multi-hop,Comprehensiveness,2.333,1.917,Hai phương pháp gần nhau.
+multi-hop,Faithfulness,2.417,2.167,Hai phương pháp gần nhau.
+multi-hop,Multi-hop reasoning,2.333,1.917,Hai phương pháp gần nhau.
+multi-hop,Latency (s),2.749,2.827,Flat RAG thường rẻ/nhanh hơn.
+multi-hop,Token usage,676.333,742.167,Flat RAG thường rẻ/nhanh hơn.
